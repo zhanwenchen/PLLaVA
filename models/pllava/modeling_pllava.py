@@ -36,7 +36,7 @@ import einops
 
 from .configuration_pllava import PllavaConfig
 import pickle
-from model_utils import is_gpu_ampere_or_later
+from utils.basic_utils import is_gpu_ampere_or_later
 
 
 logger = logging.get_logger(__name__)
