@@ -6,7 +6,6 @@ from tqdm import tqdm
 from PIL import Image
 from multiprocessing import Pool
 import multiprocessing as mp
-from argparse import ArgumentParser
 import numpy as np
 
 import torch
@@ -17,7 +16,7 @@ import transformers
 
 
 from tasks.eval.model_utils import load_pllava, pllava_answer
-from tasks.eval.eval_utils import conv_templates
+from tasks.eval.eval_utils import conv_templates, parse_args
 from tasks.eval.vcgbench import (
     VideoChatGPTBenchDataset,
     save_results,
@@ -30,68 +29,6 @@ logger.setLevel(logging.INFO)
 
 RESOLUTION = 672 # 
 
-
-def parse_args():
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--pretrained_model_name_or_path",
-        type=str,
-        required=True,
-        default='llava-hf/llava-1.5-7b-hf'
-    )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        required=True,
-        default='"./test_results/test_llava_mvbench"'
-    )
-    parser.add_argument(
-        "--num_frames",
-        type=int,
-        required=True,
-        default=4,
-    )
-    parser.add_argument(
-        "--use_lora",
-        action='store_true'
-    )
-    parser.add_argument(
-        "--lora_alpha",
-        type=int,
-        required=False,
-        default=32,
-    )
-    parser.add_argument(
-        "--weight_dir",
-        type=str,
-        required=False,
-        default=None,
-    )
-    parser.add_argument(
-        "--eval_model",
-        type=str,
-        required=False,
-        default="gpt-3.5-turbo-0125",
-    )
-    parser.add_argument(
-        "--conv_mode", 
-        type=str,
-        required=False,
-        default='eval_vcgbench',
-    )
-    parser.add_argument(
-        "--test_ratio",
-        required=False,
-        default=None,
-    )
-    parser.add_argument(
-        "--pooling_shape", 
-        type=str,
-        required=False,
-        default=None,
-    )
-    args = parser.parse_args()
-    return args
 
 def load_model_and_dataset(rank, world_size, pretrained_model_name_or_path, num_frames, use_lora, lora_alpha, weight_dir, test_ratio, pooling_shape=(16,12,12)):
     # remind that, once the model goes larger (30B+) may cause the memory to be heavily used up. Even Tearing Nodes.,

@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import copy
 import itertools
 import re
@@ -27,6 +28,24 @@ from utils.easydict import EasyDict
 IMAGE_TOKEN = "<image>"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
+def parse_args():
+    parser = ArgumentParser()
+    # Deepspeed requires --local_rank
+    parser.add_argument('--local_rank', type=int, default=-1, help='local rank passed from distributed launcher')
+    parser.add_argument('--pretrained_model_name_or_path', type=str, required=True, default='llava-hf/llava-1.5-7b-hf')
+    parser.add_argument('--save_path', type=str, required=True)
+    parser.add_argument('--num_frames', type=int, required=True, default=4)
+    parser.add_argument('--use_lora', action='store_true')
+    parser.add_argument('--lora_alpha', type=int, required=False, default=32)
+    parser.add_argument('--weight_dir', type=str, required=False, default=None)
+    parser.add_argument('--eval_model', type=str, required=False, default='gpt-3.5-turbo-0125')
+    parser.add_argument('--conv_mode', type=str, required=True)
+    parser.add_argument('--test_ratio', type=float, required=True, default=None)
+    parser.add_argument('--pooling_shape', type=str, required=False, default=None)
+    parser.add_argument('--test_datasets', type=str, required=False, default='MSVD_QA') # diff
+    parser.add_argument('--max_new_tokens', type=int, required=False, default=100) # diff
+    return parser.parse_args()
 
 
 class SeparatorStyle(Enum):

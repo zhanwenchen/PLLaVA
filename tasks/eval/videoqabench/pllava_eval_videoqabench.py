@@ -5,7 +5,6 @@ import logging
 from tqdm import tqdm
 from PIL import Image
 from multiprocessing import Pool
-from argparse import ArgumentParser
 import multiprocessing as mp
 
 
@@ -19,7 +18,7 @@ import transformers
 from decord import VideoReader, cpu
 
 from tasks.eval.model_utils import load_pllava, pllava_answer
-from tasks.eval.eval_utils import conv_templates
+from tasks.eval.eval_utils import conv_templates, parse_args
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -34,74 +33,7 @@ from tasks.eval.videoqabench import (
 )
 RESOLUTION = 672 # 
 VIDEOQA_DATASETS=["MSVD_QA","MSRVTT_QA", "ActivityNet","TGIF_QA"]
-def parse_args():
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--pretrained_model_name_or_path",
-        type=str,
-        required=True,
-        default='llava-hf/llava-1.5-7b-hf'
-    )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        required=True,
-        default='"./test_results/test_llava_mvbench"'
-    )
-    parser.add_argument(
-        "--num_frames",
-        type=int,
-        required=True,
-        default=4,
-    )
-    parser.add_argument(
-        "--use_lora",
-        action='store_true'
-    )
-    parser.add_argument(
-        "--lora_alpha",
-        type=int,
-        required=False,
-        default=32,
-    )
-    parser.add_argument(
-        "--max_new_tokens",
-        type=int,
-        required=False,
-        default=100,
-    )
-    parser.add_argument(
-        "--weight_dir",
-        type=str,
-        required=False,
-        default=None,
-    )
-    parser.add_argument(
-        "--eval_model",
-        type=str,
-        required=False,
-        default="gpt-3.5-turbo-0125",
-    )
-    parser.add_argument(
-        '--test_ratio',
-        type=float,
-        required=False,
-        default=1
-    )
-    parser.add_argument(
-        "--conv_mode", 
-        type=str,
-        required=False,
-        default='eval_videoqabench',
-    )
-    parser.add_argument(
-        "--test_datasets", 
-        type=str,
-        required=False,
-        default='MSVD_QA',
-    )
-    args = parser.parse_args()
-    return args
+
 
 def load_model_and_dataset(rank, world_size, pretrained_model_name_or_path, num_frames, use_lora, lora_alpha, weight_dir, test_ratio, test_datasets):
     # remind that, once the model goes larger (30B+) may cause the memory to be heavily used up. Even Tearing Nodes.
