@@ -15,8 +15,8 @@ from decord import VideoReader, cpu
 import transformers
 
 
-from tasks.eval.model_utils import load_pllava, pllava_answer
-from tasks.eval.eval_utils import conv_templates, parse_args
+from tasks.eval.model_utils import pllava_answer
+from tasks.eval.eval_utils import conv_templates, parse_args, load_model_and_dataset
 from tasks.eval.vcgbench import (
     VideoChatGPTBenchDataset,
     save_results,
@@ -29,18 +29,6 @@ logger.setLevel(logging.INFO)
 
 RESOLUTION = 672 # 
 
-
-def load_model_and_dataset(rank, world_size, pretrained_model_name_or_path, num_frames, use_lora, lora_alpha, weight_dir, test_ratio, pooling_shape=(16,12,12)):
-    # remind that, once the model goes larger (30B+) may cause the memory to be heavily used up. Even Tearing Nodes.,
-    model, processor = load_pllava(pretrained_model_name_or_path, num_frames=num_frames, use_lora=use_lora, weight_dir=weight_dir, lora_alpha=lora_alpha, pooling_shape=pooling_shape)
-    logger.info('done loading llava')
-    #  position embedding
-    model = model.to(torch.device(rank))
-    model = model.eval()
-
-    dataset = VideoChatGPTBenchDataset(num_segments=num_frames, test_ratio=test_ratio)
-    dataset.set_rank_and_world_size(rank, world_size)
-    return model, processor, dataset
 
 def infer_vcgbench(
         model,
@@ -121,15 +109,7 @@ def run(rank, args, world_size,start_rank=0):
     logger.info(f'loading model and constructing dataset to gpu {rank}...')
     if args.pooling_shape is not None:
         pooling_shape=tuple([int(x) for x in args.pooling_shape.split("-")])
-    model, processor, dataset = load_model_and_dataset(rank,
-                                                       world_size,
-                                                       pretrained_model_name_or_path=args.pretrained_model_name_or_path,
-                                                       num_frames=args.num_frames,
-                                                       use_lora=args.use_lora,
-                                                       weight_dir=args.weight_dir,
-                                                       lora_alpha=args.lora_alpha,
-                                                       test_ratio=args.test_ratio,
-                                                       pooling_shape=pooling_shape)
+    model, processor, dataset = load_model_and_dataset(rank, world_size, pretrained_model_name_or_path=args.pretrained_model_name_or_path, num_frames=args.num_frames, use_lora=args.use_lora, weight_dir=args.weight_dir, lora_alpha=args.lora_alpha, pooling_shape=pooling_shape, dataset_class=VideoChatGPTBenchDataset, test_ratio=args.test_ratio, test_datasets=None)
     logger.info(f'done model and dataset...')
     logger.info('constructing dataset...')
     logger.info('single test...')

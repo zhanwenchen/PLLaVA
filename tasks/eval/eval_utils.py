@@ -24,9 +24,23 @@ from transformers import StoppingCriteria, StoppingCriteriaList
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 
 from utils.easydict import EasyDict
+from tasks.eval.model_utils import load_pllava
 
 IMAGE_TOKEN = "<image>"
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
+def load_model_and_dataset(rank, world_size, pretrained_model_name_or_path, num_frames, use_lora, lora_alpha, weight_dir, pooling_shape, dataset_class, test_ratio, test_datasets):
+    # remind that, once the model goes larger (30B+) may cause the memory to be heavily used up. Even Tearing Nodes.
+    model, processor = load_pllava(pretrained_model_name_or_path, num_frames=num_frames, use_lora=use_lora, weight_dir=weight_dir, lora_alpha=lora_alpha, pooling_shape=pooling_shape)
+
+    #  position embedding
+    model.eval()
+    model.to(torch.device(rank), non_blocking=True)
+
+    dataset = dataset_class(test_ratio=test_ratio, num_segments=num_frames, test_datasets=test_datasets)
+    dataset.set_rank_and_world_size(rank, world_size)
+    return model, processor, dataset
 
 
 def parse_args():
